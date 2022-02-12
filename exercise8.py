@@ -62,7 +62,7 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 
 toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
 
-def plot(logbook):
+def plot(logbook, best_sizes):
     gen = logbook.select("gen")
     fit_max = logbook.chapters["fitness"].select("max")
 
@@ -82,7 +82,7 @@ def plot(logbook):
     line2 = ax2.plot(gen, avg_sizes, "r-", label="Average Size")
     line3 = ax2.plot(gen, max_sizes, "darkred")
     line4 = ax2.plot(gen, min_sizes, "darkred")
-    # line5 = ax2.plot(gen, best_sizes, "lightcoral", label="Size best fitness")
+    line5 = ax2.plot(gen, best_sizes, "lightcoral", label="Size best fitness")
 
 
     ax2.fill_between(gen, min_sizes, max_sizes, color='darkred', alpha=.5)
@@ -91,7 +91,7 @@ def plot(logbook):
     for tl in ax2.get_yticklabels():
         tl.set_color("r")
 
-    lns = line1 # + line5
+    lns = line1 + line5
     labs = [l.get_label() for l in lns]
     ax1.legend(lns, labs, loc="center right")
 
@@ -114,24 +114,26 @@ def main():
     # pop2 = copy.deepcopy(pop)
     hof = tools.HallOfFame(1)
 
+    hardcoded_best_sizes = [2, 7, 7, 7, 7, 7, 5, 5, 5, 5, 7, 7, 7, 7, 12, 12, 13, 13, 13, 15, 15, 16, 16, 23, 22, 20, 20, 21, 20, 20, 20, 31, 30, 30, 30, 30, 30, 30, 42, 42, 62, 62, 62, 62, 37, 62, 62, 64, 63, 63, 67]
     ngen = 50
 
 
     
     # best_sizes = []
-    # best_sizes.append(len(tools.selBest(pop2, 1)[0]))
+    # best_sizes.append(len(tools.selBest(pop, 1)[0]))
     # for _ in range(ngen):
-    #     pop2, ew = algorithms.eaSimple(pop2, toolbox, 0.7, 0, 1, stats=mstats)
-    #     bests = tools.selBest(pop2, 1)
+    #     pop, ew = algorithms.eaSimple(pop, toolbox, 0.7, 0, 1, stats=mstats)
+    #     bests = tools.selBest(pop, 1)
+
     #     best_sizes.append(len(bests[0]))
 
     # print("SIZE BEST SIZE")
-    # print(len(best_sizes))
+    # print(best_sizes)
 
     pop, log = algorithms.eaSimple(pop, toolbox, 0.7, 0, ngen, stats=mstats,
                                    halloffame=hof, verbose=True)
     
-    plot(log)
+    plot(log, hardcoded_best_sizes)
 
     return pop, log, hof
 
