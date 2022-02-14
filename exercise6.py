@@ -1,17 +1,18 @@
 import random
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import math
 
 # distances = [[]]
-cities = [[0.2554,18.2366], [0.4339,15.2476], [0.7377,8.3137], [1.1354,16.5638]]
+# cities = [[0.2554,18.2366], [0.4339,15.2476], [0.7377,8.3137], [1.1354,16.5638]]
 # route= [0, 8, 4]
 
 # route2 = [(x1,y1),(x2.y2)]
 
-iterations = 10
+iterations = 1500
+# cities = [None]
 
-def calculate_total_distance(route):
+def calculate_total_distance(route, cities):
     distance = 0
     for i in range(1, len(route)-1):
         a = cities[route[i-1]]
@@ -65,61 +66,69 @@ def rsm(route):
     route[cuts[0]] = value2
     return route
 
-def key(route):
-    return fitness(calculate_total_distance(route))
+def key(cities):
+    return lambda route: fitness(calculate_total_distance(route, cities))
 
-def runEA():
+def runEA(cities):
     population = []
     for i in range(4):
         route = random.sample(range(len(cities)), len(cities))
         # fitness = fitness(calculate_total_distance(route))
         population.append(route)
     
+    best_fitnesses = []
 
     for i in range(iterations):
         print(population)
-        print(f"{i} : {key(population[0])}")
-        list.sort(population, key=key, reverse=True)
+        print(f"{i} : {key(cities)(population[0])}")
+        list.sort(population, key=key(cities=cities), reverse=True)
         (s1,s2) = crossover(population[0], population[1])
+        best_fitnesses.append(key(cities)(population[0]))
         population[2] = rsm(s1)
         population[3] = rsm(s2)
 
-    list.sort(population, key=key, reverse=True)
+    list.sort(population, key=key(cities=cities), reverse=True)
     print(f"Best route: {population[0]}")
-    print(f"Best fitness: {key(population[0])}")
+    print(f"Best fitness: {key(cities)(population[0])}")
+    return best_fitnesses
 
 
-def runMA():
+def runMA(cities):
     population = []
     for i in range(4):
         route = random.sample(range(len(cities)), len(cities))
         # fitness = fitness(calculate_total_distance(route))
-        population.append(ma(route))
+        population.append(ma(route,cities))
     
+    best_fitnesses = []
 
     for i in range(iterations):
         print(population)
-        print(f"{i} : {key(population[0])}")
-        list.sort(population, key=key, reverse=True)
+        print(f"{i} : {key(cities)(population[0])}")
+        list.sort(population, key=key(cities=cities), reverse=True)
         (s1,s2) = crossover(population[0], population[1])
-        population[2] = ma(rsm(s1))
-        population[3] = ma(rsm(s2))
+        best_fitnesses.append(key(cities)(population[0]))
+        population[2] = ma(rsm(s1), cities)
+        population[3] = ma(rsm(s2),cities)
         
-
-        
-    list.sort(population, key=key, reverse=True)
+    list.sort(population, key=key(cities=cities), reverse=True)
     print(f"Best route: {population[0]}")
-    print(f"Best fitness: {key(population[0])}")
+    print(f"Best fitness: {key(cities)(population[0])}")
+    return best_fitnesses
+
+def calc_avg_fitness(population,cities):
+    fitnesses = [key(cities)(x) for x in population]
+    return sum(fitnesses) / len(fitnesses)
 
 
-def ma(route):
+def ma(route,cities):
     # route = random.sample(range(len(cities)), len(cities))
     existing_route = route
-    best_distance = key(existing_route)
+    best_distance = key(cities)(existing_route)
     for i in range(len(cities)-1):
         for j in range(i+1, len(cities)):
             new_route = optSwap(existing_route, i, j)
-            new_distance = calculate_total_distance(new_route)
+            new_distance = calculate_total_distance(new_route, cities)
             if (new_distance < best_distance):
                 existing_route = new_route
                 best_distance = new_distance
@@ -140,16 +149,61 @@ def optSwap(route, i, j):
         newRoute[k] = route[k]
     return newRoute
 
-def plot_chart():
+def plot_chart(path, split):
+    cities = readTSPData(path, split)
+    runs = 10
+    runsMA = [runMA(cities) for _ in range(runs)]
+    runsEA = [runEA(cities) for _ in range(runs)]
+
+    avgMA = [0] * iterations # Average best fitness per iteration over the 10 runs
+    avgEA = [0] * iterations 
+
+    for i in range(iterations):
+        for r in range(runs):
+            avgMA[i] += runsMA[r][i]
+            avgEA[i] += runsEA[r][i]
+        avgMA[i] = avgMA[i]/runs
+        avgEA[i] = avgEA[i]/runs
+
+
+
+
+    # avgMA = [sum(x) / len(x) for x in runsMA]
+    # avgEA = [sum(x) / len(x) for x in runsEA]
+
+    for x in range(runs):
+        plt.plot(range(iterations), runsMA[x], label = f"runMA {x}")   
+    plt.plot(range(iterations), avgMA, label="avgMA")
+    plt.legend()
+    plt.show()
+
+    for x in range(runs):
+        plt.plot(range(iterations), runsEA[x], label = f"runEA {x}")
+    plt.plot(range(iterations), avgEA, label="avgEA")
+    plt.legend()
+    plt.show()
     
-    print("hi")
 
-def readTSPData(path):
+def readTSPData(path, split):
+
     with open(path) as f:
-        contents = f.readlines()
-        print(contents)
+        return [[float(num) for num in line.split(split)] for line in f]
+        print(cities)
 
-runMA()
+    # with open(path) as f:
+    #     lines = f.readlines()
+    # coordinates= []
+    # count = 0
+    # for line in lines:
+    #     coordinates.append(line.split("\s"))
+    #     count += 1
+    #     print(f'line {count}: {line}') 
+
+plot_chart("bier127.txt", "  ")
+plot_chart("file-tsp.txt", "   ")
+# runMA()
+
+
 # procedure 2optSwap(route, i, j) {
 #     1. take route[0] to route[i-1] and add them in order to new_route
 #     2. take route[i] to route[j] and add them in reverse order to new_route
