@@ -46,31 +46,55 @@ def kMeans():
     
     
     return
+
+def calc_euclidean_distance(c, z):
+    return math.sqrt((c[0][0]-z[0][0])**2 + (c[0][1] - z[0][1])**2)
     
-def calc_fitness_8():
+def calc_fitness_8(cluster_centroid_vecs, dataset):
+    for c in cluster_centroid_vecs:
+        c_sum = 0
+        for z in dataset:
+            if z[1] == c:
+                temp = (calc_euclidean_distance(c, z) / len(datapointsinC))
+
     return 0
 
 def run(dataset, N):
     particles = []
 
     data = gen_dataset_1(dataset)
+    # 1 initialize particles
     for i in range(no_particles):
         particle = random.sample(data, N)
         particles.append(particle)
     
+    # 2 for t=1 to t_max (max iterations) do
     for i in range(iterations):
-        for x in particles:
+        # (a) for each particle i do
+        for particle in particles:
+            # (b) for each datavector z_p
+            count = 0
             for z in data:
                 distance = None
                 cluster = None
-                for c in x:
-                    new_distance = math.sqrt((c[0][0]-z[0][0])**2 + (c[0][1] - z[0][1])**2)
+                for c in particle:
+                    # i calculate the Euclidean distance d(z_p, m_ij) to all cluster centroids c_ij
+                    new_distance = calc_euclidean_distance(c, z)
+                    # local best
                     if distance is None or distance > new_distance:
                         distance = new_distance
                         cluster = c
-                z[1] = cluster
-            
-            fitness()
+                # Assign z to the cluster (centroid) with minimal distance
+                
+                #z[1] = cluster[1]
+                data[count][1] = cluster[1]
+                #cluster[count].append(data[count]) = cluster
+                count += 1
+            #Compute the fitness x_i
+            calc_fitness_8()
+            #update local best
+        #update global best
+        #update each particle x_i using PSO update rules
                 
 
 
