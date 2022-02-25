@@ -4,8 +4,10 @@ import math
 import csv
 from matplotlib import pyplot as plt
 
+""""
+K-Means clustering algorithm.
+"""
 class KMeans:
-    """"K-Means clustering algorithm."""
     """
     1. Randomly initialize the Nc clutser centroid vectors
     2. Repeat
@@ -123,6 +125,10 @@ def gen_dataset_1():
 """"
 Particle is a list of cluster centroids that is being optimized
 """
+# global PSO variables
+iterations = 100
+NParticles = 10
+
 class Particle:
     
     def __init__(self, data, amount_classes):
@@ -173,14 +179,6 @@ class Particle:
             for z in cluster:
                 sum += (self.calc_euclidean_distance(self.centroids[c], z) / len(cluster))
         return sum/len(self.centroids)
-
-
-
-
-# ======= MAIN =======================================
-
-iterations = 100
-NParticles = 10
 
 def gen_dataset_1():
     vectors = []
