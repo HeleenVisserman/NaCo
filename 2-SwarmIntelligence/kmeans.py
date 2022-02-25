@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import math
+from matplotlib import pyplot as plt
 
 class KMeans:
     """"K-Means clustering algorithm."""
@@ -27,7 +28,29 @@ class KMeans:
 
         self.SSE = None
 
+    def plot(self, fitness, runs):
+        # count = 0
+        # for f in fitness:
+        #     print(f)
+        #     plt.plot(range(runs), f, label = f"run {count}", marker='o')
+        #     count += 1
+        plt.scatter(range(runs), fitness, marker='o')
+        plt.legend()  
+        plt.show()
+
+    def reset(self):
+        self.centroids = [[] for _ in range(self.k)]
+        self.clusters = [[] for _ in range(self.k)]
+
+        self.best_centroids = None
+        self.best_clusters = None
+        self.best_total_distance = None
+
+        self.SSE = None
+
+
     def fit(self, data: np.array):
+        self.reset()
         self._init_centroids(data)
         for _ in range(self.max_iterations):
             for v in data:
@@ -40,9 +63,9 @@ class KMeans:
             
             self._calculate_centroids()
             self.clusters = [[] for _ in range(self.k)]
-
-
-        return self.best_clusters
+        print(self.best_total_distance)
+        return self.best_total_distance
+        #return self.best_clusters
 
     def _calculate_centroids(self):
         for c in range(self.k):
@@ -92,10 +115,37 @@ def update_centroids_kmeans(self):
         cluster = self.clusters[i].cluster
         self.centroids[i] = 1/(len(cluster)) * cluster.sum(axis=0)
 
+def gen_dataset_1():
+    vectors = []
+    for _ in range(400):
+        z1 = random.uniform(-1, 1)
+        z2 = random.uniform(-1, 1)
+        
+        vectors.append([z1, z2])
+    return vectors 
 
 # ======= MAIN =======================================
-data = [[1,2,3],[4,5,6],[7,8,9],[10,11,12]]
-k_means = KMeans(2)
+#data = [[1,2,3],[4,5,6],[7,8,9],[10,11,12]]#
+runs = 30
+data = gen_dataset_1()
+k_means = KMeans(10)
 
-clusters = k_means.fit(data)
-print(clusters)
+fitness = [[] for _ in range(runs)]
+#print(fitness)
+for i in range(runs):
+    print(f"run {i}")
+    fitness[i] = k_means.fit(data)
+    #fitness.append(k_means.fit(data))
+print(fitness)
+k_means.plot(fitness, runs)
+
+#clusters = k_means.fit(data)
+
+#print(clusters)
+
+# count = 0
+# for c in clusters:
+#     count += 1
+#     print(f"{count}\n")
+#     print(c)
+#     print("\n")
