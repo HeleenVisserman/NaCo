@@ -3,13 +3,6 @@ from cv2 import sumElems, transpose
 from matplotlib import pyplot as plt
 import numpy as np
 import random
-
-""""
-Cluster is a list of datapoints that belong to a certain cluster
-"""
-class Cluster:
-    def __init__(self):
-        self.cluster = []
        
 
 """"
@@ -20,16 +13,15 @@ class Particle:
     def __init__(self, data, amount_classes):
         self.centroids = np.array(random.sample(list(data), amount_classes))
   
-        self.velocity = 0
-        # self.current_pos = self.centroids
+        self.velocity = np.zeros_like(self.centroids)
         self.local_best = self.centroids
-        self.clusters = [Cluster() for c in self.centroids]
+        self.clusters = [[] for _ in self.centroids]
 
         self.w = 0.72
         self.c1 = 1.49
         self.c2 = 1.49
-        self.r1 = 1.0
-        self.r2 = 1.0
+        self.r1 = random.uniform(0,1)
+        self.r2 = random.uniform(0,1)
         # Indeed every particle has list of cluster and within this particle you update the location of the clusters based on their fit to the datapoints (this is the local best). 
         # Then you can compare the outcomes of the particles and find the global best. 
         # So you should indeed calculate for all datapoints their distance to the centroids in a particle, and do this for all particle. 
@@ -37,7 +29,7 @@ class Particle:
     def update_velocity(self, global_best):
         self.r1 = random.uniform(0,1)
         self.r2 = random.uniform(0,1)
-        new_velocity = self.w*self.velocity + np.dot(self.c1*self.r1,(self.local_best - self.centroids)) + np.dot(self.c2*self.r2,(global_best - self.centroids))
+        new_velocity = self.w * self.velocity + np.dot(self.c1*self.r1,(self.local_best - self.centroids)) + np.dot(self.c2*self.r2,(global_best - self.centroids))
         print("new velocity = ", new_velocity)
         self.velocity = new_velocity
 
@@ -47,7 +39,7 @@ class Particle:
     def update_local_best(self):
         result = []
         for i in range(len(self.centroids)):
-            cluster = self.clusters[i].cluster
+            cluster = self.clusters[i]
             # print(len(cluster))
             result.append((np.dot(1/(len(cluster)), np.sum(np.array(cluster), axis =0))).tolist())
         self.local_best = result
@@ -55,7 +47,7 @@ class Particle:
         
 
     def reset_clusters(self):
-        self.clusters = [Cluster() for c in self.clusters]
+        self.clusters = [[] for _ in self.clusters]
 
     
     def calc_euclidean_distance(self, c, z):
@@ -64,8 +56,8 @@ class Particle:
     def calc_fitness_8(self):
         sum = 0
         for c in range(len(self.centroids)):
-            cluster = self.clusters[c].cluster
-            # print("cluster = ", cluster)
+            cluster = self.clusters[c]
+            print("cluster = ", cluster)
             for z in cluster:
                 sum += (self.calc_euclidean_distance(self.centroids[c], z) / len(cluster))
         print("sum = ", sum)
@@ -73,7 +65,7 @@ class Particle:
 
 # ======= MAIN =======================================
 
-iterations = 100
+iterations = 1
 NParticles = 2
 trials = 2
 
@@ -88,7 +80,7 @@ def gen_dataset_1():
 
 def plot(fitness):
     for p in range(NParticles):
-        plt.plot(range(iterations), np.transpose(fitness)[p], label = f"Run1", color = 'green')
+        plt.plot(range(iterations), np.transpose(fitness)[p], label = f"P{p}")
     plt.legend()  
     plt.show()
     
@@ -123,7 +115,7 @@ def runPSO(dataset, N):
                         cluster = j
                 
                 # ii assign z_p to cluster C_ij with minimal distance
-                i.clusters[cluster].cluster.append(z)
+                i.clusters[cluster].append(z)
             # iii calculate fitness using equation (8)
             fitness_iteration.append(Particle.calc_fitness_8(i))
             # (c) update local best
@@ -140,8 +132,8 @@ def runPSO(dataset, N):
         print("Fitnesses = ", fitnesses)
     plot(fitnesses)
         
-
-runPSO(gen_dataset_1(), 2)
+data = [[1,2,3],[4,5,6],[7,8,9],[10,11,12]]
+runPSO(data, 2)
 # m = data.sum(axis=0)
 # Particle.update_centroids(a)
 # print(a.centroids)
