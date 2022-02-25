@@ -3,18 +3,12 @@ from cv2 import sumElems
 import numpy as np
 import random
 
-iterations = 100
-NParticles = 10
-w = 0.72
-c1 = 1.49
-c2=1.49
-
 """"
 Cluster is a list of datapoints that belong to a certain cluster
 """
 class Cluster:
     def __init__(self):
-        self.cluster = np.array([[1,2,3],[32,4,56]])
+        self.cluster = np.array([])
        
 
 """"
@@ -65,9 +59,56 @@ class Particle:
             for z in cluster:
                 sum += (self.calc_euclidean_distance(self.centroids[c], z) / len(cluster))
         return sum/len(self.centroids)
-    
-    
 
+# ======= MAIN =======================================
+
+iterations = 100
+NParticles = 10
+
+def gen_dataset_1():
+    vectors = np.array([])
+    for _ in range(400):
+        z1 = random.uniform(-1, 1)
+        z2 = random.uniform(-1, 1)
+        
+        vectors.append(np.array([z1, z2]))
+    return vectors   
+    
+def runParticles(dataset, N):
+    data = dataset
+
+    # 1 initialize each particle to contain N_c randomly selected cluster centroids
+    particles = np.array([Particle(dataset, N)]*NParticles)
+
+    fitnesses = []*iterations
+    # 2 for t=1 to t_max (max iterations) do
+    for i in range(iterations):
+        # (a) for each particle i do
+        fitness_iteration = []
+        for i in particles:
+            # (b) for each datavector z_p
+            for z in data:
+                # i calculate the Euclidean distance d(z_p, m_ij) to all cluster centroids c_ij
+                distance = None
+                cluster = None
+                for j in range(len(i.centroids)):
+                    c = i.centroids[j]
+                    new_distance = Particle.calc_euclidean_distance(c,z)
+                    if distance is None or distance > new_distance:
+                        distance = new_distance
+                        cluster = j
+                
+                # ii assign z_p to cluster C_ij with minimal distance
+                i.clusters[j].append(z)
+            # iii calculate fitness using equation (8)
+            fitness_iteration.append(Particle.calc_fitness_8(i))
+        fitnesses[i] = fitness_iteration
+        
+
+
+if __name__ == "__main__":
+    # run(gen_dataset_1(),2)
+    # run(gen_dataset_2("iris.data"),3)
 
 data = np.array([[1,2,3], [2,3,4],[43,5,2],[32,4,56]])
 a = Particle(data, 2)
