@@ -74,7 +74,7 @@ class Particle:
 # ======= MAIN =======================================
 
 iterations = 100
-NParticles = 1
+NParticles = 2
 trials = 2
 
 def gen_dataset_1():
@@ -129,7 +129,7 @@ def runPSO(dataset, N):
             # (c) update local best
             Particle.update_local_best(i)
         # (c) update global best
-        globalBest = particles[np.where(fitness_iteration == np.amax(fitness_iteration))[0][0]].centroids
+        globalBest = particles[np.where(fitness_iteration == np.amin(fitness_iteration))[0][0]].centroids
         print("GlobalBest = ", globalBest)
         # (d) update cluster centroids using velocity and position update rules
         for p in particles:
