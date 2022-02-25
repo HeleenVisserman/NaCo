@@ -33,31 +33,17 @@ def gen_dataset_1():
     
     return vectors
 
-
-def optimizePSO():
-    return
-
-def kMeans():
-    particles = []
-
-    data = gen_dataset_1()
-    for i in range(no_particles):
-        
+# def calc_euclidean_distance(c, z):
+#     return math.sqrt((c[0][0]-z[0][0])**2 + (c[0][1] - z[0][1])**2)
     
-    
-    return
+# def calc_fitness_8(cluster_centroid_vecs, dataset):
+#     for c in cluster_centroid_vecs:
+#         c_sum = 0
+#         for z in dataset:
+#             if z[1] == c:
+#                 temp = (calc_euclidean_distance(c, z) / len(datapointsinC))
 
-def calc_euclidean_distance(c, z):
-    return math.sqrt((c[0][0]-z[0][0])**2 + (c[0][1] - z[0][1])**2)
-    
-def calc_fitness_8(cluster_centroid_vecs, dataset):
-    for c in cluster_centroid_vecs:
-        c_sum = 0
-        for z in dataset:
-            if z[1] == c:
-                temp = (calc_euclidean_distance(c, z) / len(datapointsinC))
-
-    return 0
+#     return 0
 
 def run(dataset, N):
     particles = []
@@ -106,7 +92,7 @@ def run(dataset, N):
 def plot():
     # run1 =  run(w_1, a1_1, a2_1, r1_1, r2_1)
     # run2 = run(w_2, a1_2,a2_2,r1_2,r2_2)
-   
+    return None
 
 
     # for x in range(iterations):
