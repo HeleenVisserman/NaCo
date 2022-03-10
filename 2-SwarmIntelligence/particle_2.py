@@ -1,3 +1,4 @@
+import csv
 import math
 from cv2 import sumElems, transpose
 from matplotlib import pyplot as plt
@@ -65,8 +66,8 @@ class Particle:
 
 # ======= MAIN =======================================
 
-iterations = 1
-NParticles = 2
+iterations = 10
+NParticles = 10
 trials = 2
 
 def gen_dataset_1():
@@ -76,7 +77,17 @@ def gen_dataset_1():
         z2 = random.uniform(-1, 1)
         
         vectors.append([z1, z2])
-    return vectors   
+    return vectors  
+
+def gen_dataset_2(path):
+    vectors = []
+    with open(path) as f:
+        vals = [[num for num in line.split(",")] for line in f]
+        for row in vals:
+            print(row)
+            vec = [float(row[0]), float(row[1]), float(row[2]), float(row[3])]
+            vectors.append(vec)  
+    return vectors    
 
 def plot(fitness):
     for p in range(NParticles):
@@ -132,7 +143,8 @@ def runPSO(dataset, N):
         print("Fitnesses = ", fitnesses)
     plot(fitnesses)
         
-data = [[1,2,3],[4,5,6],[7,8,9],[10,11,12]]
+# data = [[1,2,3],[4,5,6],[7,8,9],[10,11,12]]
+data = gen_dataset_2("iris.data")
 runPSO(data, 2)
 # m = data.sum(axis=0)
 # Particle.update_centroids(a)
