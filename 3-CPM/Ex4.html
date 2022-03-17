@@ -46,19 +46,19 @@ let config = {
 
 		// Adhesion parameters:
 		J: [[0,20,20], 
-			[20,0,0], 
+			[20,0,20], 
 			[0,0,2000]],
 		
 		// VolumeConstraint parameters
 		LAMBDA_V : [0,50,500],					// VolumeConstraint importance per cellkind
-		V : [0,200,100],						// Target volume of each cellkind
+		V : [0,500,250],						// Target volume of each cellkind
 		
-		LAMBDA_P : [0,2,30],
-		P : [0,180,10],
+		LAMBDA_P : [0,2,160],
+		P : [0,300,100],
 
 		// ActivityConstraint parameters
-		LAMBDA_ACT : [0,200,0],				// ActivityConstraint importance per cellkind
-		MAX_ACT : [0,80,0],					// Activity memory duration per cellkind
+		LAMBDA_ACT : [0,300,0],				// ActivityConstraint importance per cellkind
+		MAX_ACT : [0,30,0],					// Activity memory duration per cellkind
 		ACT_MEAN : "geometric"				// Is neighborhood activity computed as a
 											// "geometric" or "arithmetic" mean?
 		
@@ -69,7 +69,7 @@ let config = {
 	simsettings : {
 	
 		// Cells on the grid
-		NRCELLS : [50,25],							// Number of cells to seed for all
+		NRCELLS : [80,36],							// Number of cells to seed for all
 		// non-background cellkinds.
 		// Runtime etc
 		BURNIN : 500,
@@ -91,14 +91,15 @@ let config = {
 		// EXPNAME : "ManyCellsPrefDir",				// Used for the filename of output images.
 		
 		// Output stats etc
-		STATSOUT : { browser: false, node: true }, // Should stats be computed?
+		STATSOUT : { browser: true, node: true }, // Should stats be computed?
 		LOGRATE : 10							// Output stats every <LOGRATE> MCS.
 
 	}
 }
 /*	---------------------------------- */
 let sim, meter
-let oldcellCentroids = {}
+let oldset = false
+let oldcellCentroids = {};
 
 
 function initialize(){
@@ -106,11 +107,11 @@ function initialize(){
 	 	the simulation object. If Custom-methods above is set to false,
 	 	this object is ignored and not used in the html/node files. */
 	 let custommethods = {
-	 	initializeGrid : initializeGrid
-		// logStats = logStats
+	 	initializeGrid : initializeGrid,
+		logStats : logStats
 	 }
 	sim = new CPM.Simulation( config, custommethods )
-
+	 
 	meter = new FPSMeter({left:"auto", right:"5px"})
 	step()
 }
@@ -143,7 +144,7 @@ function initializeGrid(){
 	const [width, height] = this.C.extents
 
 	
-	const rows = Math.floor(Math.sqrt(obstacleAmount)) || 1;
+	const rows = Math.floor(Math.sqrt(obstacleAmount)) || 0;
 	const cols = Math.floor(obstacleAmount / rows);
 	console.log(`Rows: ${rows}`, `Columns: ${cols}`);
 	const horStep = Math.floor(width / rows);
@@ -162,57 +163,33 @@ function initializeGrid(){
 
 class CellSpeed extends CPM.Stat {	
 	computeSpeedOfCell(cid, cellcentroids, prevcc){
+		// console.log(`prev = ${prevcc}`, `centroid = ${cellcentroids}`)
 		//get the current centroid of this cell
-		const centroid = cellcentroids[cid]
+		var centroid = cellcentroids[cid]
 
 		//get the previous centroid of this cell
-		const previous = prevcc[cid]
+		var previous = prevcc[cid]
+		// console.log(`prev = ${previous}`, `centroid = ${centroid}`)
 
-		const speed = abs(length(centroid-previous))
+		const speed = Math.sqrt((centroid[0]-previous[0])*(centroid[0]-previous[0]) + (centroid[1]-previous[1])*(centroid[1]-previous[1]))
 
 		return speed
 		
 	}
 
 	compute() {
-
-		const cellcentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
-
-		let speeds = {}
-		for (let cid of this.C.cellIDs()) {
-			speeds[cid] = this.computeSpeedOfCell(cid, cellpixels, oldcellCentroids)
+		const cellcentroids = this.M.getStat(CPM.CentroidsWithTorusCorrection)
+		if (!oldset) {
+			oldcellCentroids = this.M.getStat(CPM.CentroidsWithTorusCorrection)
+			oldset = true
 		}
 
-		oldcellCentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
-
-		return speeds
-	}
-}
-
-class CellDensity extends CPM.Stat {	
-	computeCellDensity(cid, cellcentroids, prevcc){
-		//get the current centroid of this cell
-		const centroid = cellcentroids[cid]
-
-		//get the previous centroid of this cell
-		const previous = prevcc[cid]
-
-		const speed = abs(length(centroid-previous))
-
-		return speed
-		
-	}
-
-	compute() {
-
-		const cellcentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
-
 		let speeds = {}
-		for (let cid of this.C.cellIDs()) {
-			speeds[cid] = this.computeSpeedOfCell(cid, cellpixels, oldcellCentroids)
+		for (let cid of this.M.cellIDs()) {
+			speeds[cid] = this.computeSpeedOfCell(cid, cellcentroids, oldcellCentroids)
 		}
 
-		oldcellCentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
+		oldcellCentroids = this.M.getStat(CPM.CentroidsWithTorusCorrection)
 
 		return speeds
 	}
@@ -221,14 +198,17 @@ class CellDensity extends CPM.Stat {
 // Overwrite the logstats method to compute our custom stat
 function logStats(){
 	const allSpeeds = this.C.getStat( CellSpeed )
-	const density = this.C.getStat(CellDensity)
-	for( let cid of this.C.cellIDs() ){
-		let thespeed = avg(allSpeeds)
-		let thedens = allSpeeds[cid]
-		console.log( this.time + "\t" + cid + "\t" +  // eslint-disable-line
-				this.C.cellKind(cid) + "\t" + theperc + "\t" + thedens )
+	let sum = 0
+	let counter = 0
+	for (let cell of this.C.cellIDs()) {
+		if (this.C.cellKind(cell) == 1) {
+			sum += allSpeeds[cell]
+			counter += 1
+		}
 	}
-
+	let nrcells = this.conf["NRCELLS"]
+	let thespeed = sum/counter;
+	console.log( this.time + "\t" + thespeed + "\t" + nrcells[1] + "\t" + nrcells[0])
 }	
 
 </script>
