@@ -46,7 +46,7 @@ const config = {
 
 		// Adhesion parameters:
 		J: [[0,20,0], 
-			[20,20,0], 
+			[20,0,20], 
 			[0,0,2000]],
 		
 		// VolumeConstraint parameters
@@ -54,7 +54,13 @@ const config = {
 		V : [0,500,250],						// Target volume of each cellkind
 		
 		LAMBDA_P : [0,2,160],
-		P : [0,280,160]
+		P : [0,280,160],
+
+		// ActivityConstraint parameters
+		LAMBDA_ACT : [0,300,0],				// ActivityConstraint importance per cellkind
+		MAX_ACT : [0,30,0],					// Activity memory duration per cellkind
+		ACT_MEAN : "geometric"				// Is neighborhood activity computed as a
+											// "geometric" or "arithmetic" mean?
 		
 		
 	},
@@ -63,7 +69,7 @@ const config = {
 	simsettings : {
 	
 		// Cells on the grid
-		NRCELLS : [30,45],					// Number of cells to seed for all
+		NRCELLS : [30,30],					// Number of cells to seed for all
 		// non-background cellkinds.
 		// Runtime etc
 		BURNIN : 0,
@@ -73,7 +79,7 @@ const config = {
 		// Visualization
 		CANVASCOLOR : "eaecef",
 		CELLCOLOR : ["00FF00","0000FF"],
-		ACTCOLOR : [false,false],					// Should pixel activity values be displayed?
+		ACTCOLOR : [true,false],					// Should pixel activity values be displayed?
 		SHOWBORDERS : [true,true],				// Should cellborders be displayed?
 		zoom : 2,							// zoom in on canvas with this factor.
 		
@@ -104,16 +110,16 @@ function initialize() {
 	}
 	sim = new CPM.Simulation( config, custommethods )
 
-let pconstraint = new CPM.PersistenceConstraint( 
-	{
-		// PersistenceConstraint parameters
-		LAMBDA_DIR: [0,100,0], 				// PersistenceConstraint importance per ck
-		PERSIST: [0,.5,0]						// Weight of the persistent direction in the
-		// computation of the new direction per cellkind
-	} 
-)
+	// let pconstraint = new CPM.PersistenceConstraint( 
+	// 	{
+	// 		// PersistenceConstraint parameters
+	// 		LAMBDA_DIR: [0,100,0], 				// PersistenceConstraint importance per ck
+	// 		PERSIST: [0,.5,0]						// Weight of the persistent direction in the
+	// 		// computation of the new direction per cellkind
+	// 	} 
+	// )
 
-sim.C.add( pconstraint )
+	// sim.C.add( pconstraint )
 	meter = new FPSMeter({left:"auto", right:"5px"});
 	step();
 }
