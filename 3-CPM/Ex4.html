@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ActModelWithObstacles</title>
+<style type="text/css">
+body{
+		font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue",
+		 Helvetica, Arial, "Lucida Grande", sans-serif;
+	 padding : 15px;
+	 max-width: 600px;
+	 margin: auto;
+}
+td {
+	 padding: 10px;
+	 vertical-align: top;
+}
+</style>
+
+
+<script src="./artistoo.js"></script>
+<script src="./fpsmeter.min.js"></script>
+<script>
+"use strict"
+
+
+/*	----------------------------------
+	CONFIGURATION SETTINGS
+	----------------------------------
+*/
+let config = {
+
+	// Grid settings
+	// ndim : 2,
+	field_size : [200,200],
+	
+	// CPM parameters and configuration
+	conf : {
+		// Basic CPM parameters
+		torus : [true,true],						// Should the grid have linked borders?
+		seed : 1,							// Seed for random number generation.
+		T : 20,								// CPM temperature
+		
+		// Constraint parameters. 
+		// Mostly these have the format of an array in which each element specifies the
+		// parameter value for one of the cellkinds on the grid.
+		// First value is always cellkind 0 (the background) and is often not used.
+
+		// Adhesion parameters:
+		J: [[0,20,20], 
+			[20,0,0], 
+			[0,0,2000]],
+		
+		// VolumeConstraint parameters
+		LAMBDA_V : [0,50,500],					// VolumeConstraint importance per cellkind
+		V : [0,200,100],						// Target volume of each cellkind
+		
+		LAMBDA_P : [0,2,30],
+		P : [0,180,10],
+
+		// ActivityConstraint parameters
+		LAMBDA_ACT : [0,200,0],				// ActivityConstraint importance per cellkind
+		MAX_ACT : [0,80,0],					// Activity memory duration per cellkind
+		ACT_MEAN : "geometric"				// Is neighborhood activity computed as a
+											// "geometric" or "arithmetic" mean?
+		
+		
+	},
+	
+	// Simulation setup and configuration
+	simsettings : {
+	
+		// Cells on the grid
+		NRCELLS : [50,25],							// Number of cells to seed for all
+		// non-background cellkinds.
+		// Runtime etc
+		BURNIN : 500,
+		RUNTIME : 1000,
+		RUNTIME_BROWSER : "Inf",
+		
+		// Visualization
+		CANVASCOLOR : "eaecef",
+		CELLCOLOR : ["00FF00","0000FF"],
+		ACTCOLOR : [true,false],					// Should pixel activity values be displayed?
+		SHOWBORDERS : [true,true],					// Should cellborders be displayed?
+		zoom : 2,									// zoom in on canvas with this factor.
+		
+		// Output images
+		SAVEIMG : false,								// Should a png image of the grid be saved
+													// during the simulation?
+		// IMGFRAMERATE : 1,							// If so, do this every <IMGFRAMERATE> MCS.
+		// SAVEPATH : "output/img/ManyCellsPrefDir",	// ... And save the image in this folder.
+		// EXPNAME : "ManyCellsPrefDir",				// Used for the filename of output images.
+		
+		// Output stats etc
+		STATSOUT : { browser: false, node: true }, // Should stats be computed?
+		LOGRATE : 10							// Output stats every <LOGRATE> MCS.
+
+	}
+}
+/*	---------------------------------- */
+let sim, meter
+let oldcellCentroids = {}
+
+
+function initialize(){
+	 /* 	The following functions are defined below and will be added to
+	 	the simulation object. If Custom-methods above is set to false,
+	 	this object is ignored and not used in the html/node files. */
+	 let custommethods = {
+	 	initializeGrid : initializeGrid
+		// logStats = logStats
+	 }
+	sim = new CPM.Simulation( config, custommethods )
+
+	meter = new FPSMeter({left:"auto", right:"5px"})
+	step()
+}
+
+
+function step(){
+	sim.step()
+	meter.tick()
+	if( sim.conf["RUNTIME_BROWSER"] == "Inf" | sim.time+1 < sim.conf["RUNTIME_BROWSER"] ){
+		requestAnimationFrame( step )
+	}
+}
+
+
+
+// This is the same as the basic initializeGrid() function, but now we
+// also allow each cell to have a small burnin period just after seeding.
+function initializeGrid(){
+	
+	// add the GridManipulator if not already there and if you need it
+	if( !this.helpClasses["gm"] ){ this.addGridManipulator() }
+	
+	
+	// CHANGE THE CODE BELOW TO FIT YOUR SIMULATION
+	
+	let nrcells = this.conf["NRCELLS"], cellkind, i
+	const movingCellAmount = nrcells[0]
+	const obstacleAmount = nrcells[1]
+
+	const [width, height] = this.C.extents
+
+	
+	const rows = Math.floor(Math.sqrt(obstacleAmount)) || 1;
+	const cols = Math.floor(obstacleAmount / rows);
+	console.log(`Rows: ${rows}`, `Columns: ${cols}`);
+	const horStep = Math.floor(width / rows);
+	const vertStep = Math.floor(height / cols);
+
+	for (let r = 0; r<width; r+=horStep){
+		for(let c = 0;c < height; c+=vertStep) {
+			this.gm.seedCellAt(2,[r,c])
+		}
+	}
+
+	for (let i = 0; i < movingCellAmount; i++) {
+		this.gm.seedCell(1)
+	}
+}
+
+class CellSpeed extends CPM.Stat {	
+	computeSpeedOfCell(cid, cellcentroids, prevcc){
+		//get the current centroid of this cell
+		const centroid = cellcentroids[cid]
+
+		//get the previous centroid of this cell
+		const previous = prevcc[cid]
+
+		const speed = abs(length(centroid-previous))
+
+		return speed
+		
+	}
+
+	compute() {
+
+		const cellcentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
+
+		let speeds = {}
+		for (let cid of this.C.cellIDs()) {
+			speeds[cid] = this.computeSpeedOfCell(cid, cellpixels, oldcellCentroids)
+		}
+
+		oldcellCentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
+
+		return speeds
+	}
+}
+
+class CellDensity extends CPM.Stat {	
+	computeCellDensity(cid, cellcentroids, prevcc){
+		//get the current centroid of this cell
+		const centroid = cellcentroids[cid]
+
+		//get the previous centroid of this cell
+		const previous = prevcc[cid]
+
+		const speed = abs(length(centroid-previous))
+
+		return speed
+		
+	}
+
+	compute() {
+
+		const cellcentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
+
+		let speeds = {}
+		for (let cid of this.C.cellIDs()) {
+			speeds[cid] = this.computeSpeedOfCell(cid, cellpixels, oldcellCentroids)
+		}
+
+		oldcellCentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
+
+		return speeds
+	}
+}
+
+// Overwrite the logstats method to compute our custom stat
+function logStats(){
+	const allSpeeds = this.C.getStat( CellSpeed )
+	const density = this.C.getStat(CellDensity)
+	for( let cid of this.C.cellIDs() ){
+		let thespeed = avg(allSpeeds)
+		let thedens = allSpeeds[cid]
+		console.log( this.time + "\t" + cid + "\t" +  // eslint-disable-line
+				this.C.cellKind(cid) + "\t" + theperc + "\t" + thedens )
+	}
+
+}	
+
+</script>
+</head>
+<body onload="initialize()">
+ 
+ <h1>Act Model with Obstacles</h1>
+ <p>
+ Many moving cells in between obstacle cells. </p>
+</body>
+</html>
